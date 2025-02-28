@@ -91,6 +91,20 @@ func updateVersion(filePath string, updateFunc func(Version) Version) error {
 	return nil
 }
 
+func validateComponent(component string) error {
+	validComponents := map[string]bool{
+		"major": true,
+		"minor": true,
+		"patch": true,
+	}
+	
+	if !validComponents[strings.ToLower(component)] {
+		return fmt.Errorf("invalid component: %s (must be 'major', 'minor', or 'patch')", component)
+	}
+	
+	return nil
+}
+
 func main() {
 	var files []string
 	var amount int
@@ -107,6 +121,10 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			component := strings.ToLower(args[0])
 			
+			if err := validateComponent(component); err != nil {
+				return err
+			}
+			
 			projectFiles, err := findProjectFiles(files)
 			if err != nil {
 				return err
@@ -122,9 +140,6 @@ func main() {
 					v.Minor += amount
 					v.Patch = 0
 				case "patch":
-					v.Patch += amount
-				default:
-					fmt.Printf("Unknown component: %s. Using patch instead.\n", component)
 					v.Patch += amount
 				}
 				return v
@@ -147,6 +162,10 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			component := strings.ToLower(args[0])
 			
+			if err := validateComponent(component); err != nil {
+				return err
+			}
+			
 			projectFiles, err := findProjectFiles(files)
 			if err != nil {
 				return err
@@ -159,9 +178,6 @@ func main() {
 				case "minor":
 					v.Minor = max(0, v.Minor-amount)
 				case "patch":
-					v.Patch = max(0, v.Patch-amount)
-				default:
-					fmt.Printf("Unknown component: %s. Using patch instead.\n", component)
 					v.Patch = max(0, v.Patch-amount)
 				}
 				return v
@@ -183,6 +199,11 @@ func main() {
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			component := strings.ToLower(args[0])
+			
+			if err := validateComponent(component); err != nil {
+				return err
+			}
+			
 			value, err := strconv.Atoi(args[1])
 			if err != nil {
 				return fmt.Errorf("invalid value: %s", args[1])
@@ -204,9 +225,6 @@ func main() {
 				case "minor":
 					v.Minor = value
 				case "patch":
-					v.Patch = value
-				default:
-					fmt.Printf("Unknown component: %s. Using patch instead.\n", component)
 					v.Patch = value
 				}
 				return v
@@ -268,4 +286,11 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
